@@ -2,28 +2,21 @@ import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ClothTag } from '@/types/laundry';
-import { Camera, Image as ImageIcon, X } from 'lucide-react';
+import { Camera, Image as ImageIcon, X, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AddClothModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (photo: string, label: string, tag: ClothTag) => void;
+  onAdd: (photo: string, label: string, tag: string) => void;
+  tagOptions: { value: string; label: string; emoji: string; isCustom: boolean }[];
+  onAddCustomTag: () => void;
 }
 
-const tagOptions: { value: ClothTag; label: string; emoji: string }[] = [
-  { value: 'shirt', label: 'Shirt', emoji: '👕' },
-  { value: 'pant', label: 'Pant', emoji: '👖' },
-  { value: 'towel', label: 'Towel', emoji: '🧴' },
-  { value: 'bedsheet', label: 'Bedsheet', emoji: '🛏️' },
-  { value: 'other', label: 'Other', emoji: '📦' },
-];
-
-export function AddClothModal({ isOpen, onClose, onAdd }: AddClothModalProps) {
+export function AddClothModal({ isOpen, onClose, onAdd, tagOptions, onAddCustomTag }: AddClothModalProps) {
   const [photo, setPhoto] = useState<string | null>(null);
   const [label, setLabel] = useState('');
-  const [tag, setTag] = useState<ClothTag>('other');
+  const [tag, setTag] = useState<string>(tagOptions[0]?.value || 'shirt');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -47,7 +40,7 @@ export function AddClothModal({ isOpen, onClose, onAdd }: AddClothModalProps) {
   const handleClose = () => {
     setPhoto(null);
     setLabel('');
-    setTag('other');
+    setTag(tagOptions[0]?.value || 'shirt');
     onClose();
   };
 
@@ -132,6 +125,14 @@ export function AddClothModal({ isOpen, onClose, onAdd }: AddClothModalProps) {
                 {option.emoji} {option.label}
               </button>
             ))}
+            {/* Add custom tag button */}
+            <button
+              onClick={onAddCustomTag}
+              className="px-3 py-2 rounded-full text-sm font-medium transition-all bg-primary/10 text-primary hover:bg-primary/20 flex items-center gap-1"
+            >
+              <Plus className="w-4 h-4" />
+              Add
+            </button>
           </div>
           
           {/* Submit button */}

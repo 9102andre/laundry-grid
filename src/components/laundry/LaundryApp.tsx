@@ -1,19 +1,20 @@
 import { useState } from 'react';
 import { useLaundryStorage } from '@/hooks/useLaundryStorage';
+import { useCustomTags } from '@/hooks/useCustomTags';
 import { useTheme } from '@/hooks/useTheme';
 import { BatchList } from './BatchList';
 import { BatchView } from './BatchView';
 import { CreateBatchModal } from './CreateBatchModal';
-import { ClothTag } from '@/types/laundry';
 import { Plus, Moon, Sun } from 'lucide-react';
 
 export function LaundryApp() {
   const { batches, isLoaded, createBatch, deleteBatch, addClothToBatch, toggleClothReceived, getBatch } = useLaundryStorage();
+  const { isLoaded: tagsLoaded, addCustomTag, getAllTagOptions, getTagDisplay } = useCustomTags();
   const { isDark, toggleTheme } = useTheme();
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  if (!isLoaded) {
+  if (!isLoaded || !tagsLoaded) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
@@ -22,6 +23,7 @@ export function LaundryApp() {
   }
 
   const selectedBatch = selectedBatchId ? getBatch(selectedBatchId) : null;
+  const tagOptions = getAllTagOptions();
 
   // If viewing a specific batch
   if (selectedBatch) {
@@ -33,6 +35,9 @@ export function LaundryApp() {
         onAddCloth={(photo, label, tag) => addClothToBatch(selectedBatch.id, { photo, label, tag })}
         isDark={isDark}
         onToggleTheme={toggleTheme}
+        tagOptions={tagOptions}
+        onAddCustomTag={addCustomTag}
+        getTagDisplay={getTagDisplay}
       />
     );
   }
