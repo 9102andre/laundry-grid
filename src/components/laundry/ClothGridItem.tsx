@@ -1,21 +1,16 @@
-import { ClothItem, ClothTag } from '@/types/laundry';
+import { ClothItem } from '@/types/laundry';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ClothGridItemProps {
   item: ClothItem;
   onToggle: () => void;
+  getTagDisplay: (tagValue: string) => { value: string; label: string; emoji: string };
 }
 
-const tagEmojis: Record<ClothTag, string> = {
-  shirt: '👕',
-  pant: '👖',
-  towel: '🧴',
-  bedsheet: '🛏️',
-  other: '📦',
-};
-
-export function ClothGridItem({ item, onToggle }: ClothGridItemProps) {
+export function ClothGridItem({ item, onToggle, getTagDisplay }: ClothGridItemProps) {
+  const tagDisplay = getTagDisplay(item.tag);
+  
   return (
     <div
       className={cn(
@@ -42,7 +37,7 @@ export function ClothGridItem({ item, onToggle }: ClothGridItemProps) {
         
         {/* Tag badge */}
         <span className="absolute top-2 left-2 text-lg">
-          {tagEmojis[item.tag]}
+          {tagDisplay.emoji}
         </span>
       </div>
       

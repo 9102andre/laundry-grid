@@ -1,24 +1,39 @@
 import { useState } from 'react';
-import { LaundryBatch, FilterStatus, ClothTag } from '@/types/laundry';
+import { LaundryBatch, FilterStatus } from '@/types/laundry';
 import { SummaryStats } from './SummaryStats';
 import { FilterBar } from './FilterBar';
 import { ClothGrid } from './ClothGrid';
 import { AddClothModal } from './AddClothModal';
+import { AddCustomTagModal } from './AddCustomTagModal';
 import { ArrowLeft, Camera, Moon, Sun } from 'lucide-react';
 
 interface BatchViewProps {
   batch: LaundryBatch;
   onBack: () => void;
   onToggleReceived: (clothId: string) => void;
-  onAddCloth: (photo: string, label: string, tag: ClothTag) => void;
+  onAddCloth: (photo: string, label: string, tag: string) => void;
   isDark: boolean;
   onToggleTheme: () => void;
+  tagOptions: { value: string; label: string; emoji: string; isCustom: boolean }[];
+  onAddCustomTag: (name: string, emoji: string) => void;
+  getTagDisplay: (tagValue: string) => { value: string; label: string; emoji: string };
 }
 
-export function BatchView({ batch, onBack, onToggleReceived, onAddCloth, isDark, onToggleTheme }: BatchViewProps) {
+export function BatchView({ 
+  batch, 
+  onBack, 
+  onToggleReceived, 
+  onAddCloth, 
+  isDark, 
+  onToggleTheme,
+  tagOptions,
+  onAddCustomTag,
+  getTagDisplay,
+}: BatchViewProps) {
   const [filter, setFilter] = useState<FilterStatus>('all');
-  const [tagFilter, setTagFilter] = useState<ClothTag | 'all'>('all');
+  const [tagFilter, setTagFilter] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAddTagModalOpen, setIsAddTagModalOpen] = useState(false);
 
   return (
     <div className="flex flex-col h-full">
@@ -55,6 +70,7 @@ export function BatchView({ batch, onBack, onToggleReceived, onAddCloth, isDark,
           onFilterChange={setFilter}
           activeTag={tagFilter}
           onTagChange={setTagFilter}
+          tagOptions={tagOptions}
         />
       </header>
       
@@ -64,6 +80,7 @@ export function BatchView({ batch, onBack, onToggleReceived, onAddCloth, isDark,
         filter={filter}
         tagFilter={tagFilter}
         onToggleReceived={onToggleReceived}
+        getTagDisplay={getTagDisplay}
       />
       
       {/* FAB - Add cloth */}
@@ -75,11 +92,27 @@ export function BatchView({ batch, onBack, onToggleReceived, onAddCloth, isDark,
         <Camera className="w-7 h-7" />
       </button>
       
-      {/* Add Modal */}
+      {/* Add Cloth Modal */}
       <AddClothModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={onAddCloth}
+        tagOptions={tagOptions}
+        onAddCustomTag={() => {
+          setIsAddModalOpen(false);
+          setIsAddTagModalOpen(true);
+        }}
+      />
+      
+      {/* Add Custom Tag Modal */}
+      <AddCustomTagModal
+        isOpen={isAddTagModalOpen}
+        onClose={() => setIsAddTagModalOpen(false)}
+        onAdd={(name, emoji) => {
+          onAddCustomTag(name, emoji);
+          setIsAddTagModalOpen(false);
+          setIsAddModalOpen(true);
+        }}
       />
     </div>
   );

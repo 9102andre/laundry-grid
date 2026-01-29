@@ -1,15 +1,16 @@
-import { ClothItem, FilterStatus, ClothTag } from '@/types/laundry';
+import { ClothItem, FilterStatus } from '@/types/laundry';
 import { ClothGridItem } from './ClothGridItem';
 import { useMemo } from 'react';
 
 interface ClothGridProps {
   items: ClothItem[];
   filter: FilterStatus;
-  tagFilter: ClothTag | 'all';
+  tagFilter: string;
   onToggleReceived: (clothId: string) => void;
+  getTagDisplay: (tagValue: string) => { value: string; label: string; emoji: string };
 }
 
-export function ClothGrid({ items, filter, tagFilter, onToggleReceived }: ClothGridProps) {
+export function ClothGrid({ items, filter, tagFilter, onToggleReceived, getTagDisplay }: ClothGridProps) {
   const filteredItems = useMemo(() => {
     return items.filter(item => {
       // Status filter
@@ -50,6 +51,7 @@ export function ClothGrid({ items, filter, tagFilter, onToggleReceived }: ClothG
             key={item.id}
             item={item}
             onToggle={() => onToggleReceived(item.id)}
+            getTagDisplay={getTagDisplay}
           />
         ))}
       </div>
