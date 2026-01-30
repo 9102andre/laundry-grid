@@ -236,7 +236,7 @@ export function AddClothModal({
                   <div className="flex items-center justify-between p-3 bg-muted rounded-xl">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{selectedTagDisplay.emoji}</span>
-                      <span className="font-medium">{selectedTagDisplay.label}</span>
+                      <span className="font-medium capitalize">{selectedTagDisplay.label}</span>
                     </div>
                     <button
                       onClick={handleEditTag}
