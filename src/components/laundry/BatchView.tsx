@@ -6,6 +6,7 @@ import { ClothGrid } from './ClothGrid';
 import { AddClothModal } from './AddClothModal';
 import { AddCustomTagModal } from './AddCustomTagModal';
 import { ArrowLeft, Camera, Moon, Sun } from 'lucide-react';
+import { ClothesItem } from '@/hooks/useClothesLibrary';
 
 interface BatchViewProps {
   batch: LaundryBatch;
@@ -17,6 +18,8 @@ interface BatchViewProps {
   tagOptions: { value: string; label: string; emoji: string; isCustom: boolean }[];
   onAddCustomTag: (name: string, emoji: string) => void;
   getTagDisplay: (tagValue: string) => { value: string; label: string; emoji: string };
+  clothesLibrary: ClothesItem[];
+  isLibraryLoading: boolean;
 }
 
 export function BatchView({ 
@@ -29,6 +32,8 @@ export function BatchView({
   tagOptions,
   onAddCustomTag,
   getTagDisplay,
+  clothesLibrary,
+  isLibraryLoading,
 }: BatchViewProps) {
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [tagFilter, setTagFilter] = useState<string>('all');
@@ -102,6 +107,9 @@ export function BatchView({
           setIsAddModalOpen(false);
           setIsAddTagModalOpen(true);
         }}
+        clothesLibrary={clothesLibrary}
+        isLibraryLoading={isLibraryLoading}
+        getTagDisplay={getTagDisplay}
       />
       
       {/* Add Custom Tag Modal */}
