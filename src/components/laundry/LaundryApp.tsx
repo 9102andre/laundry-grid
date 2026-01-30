@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { useLaundryStorage } from '@/hooks/useLaundryStorage';
 import { useCustomTags } from '@/hooks/useCustomTags';
+import { useClothesLibrary } from '@/hooks/useClothesLibrary';
 import { useTheme } from '@/hooks/useTheme';
 import { BatchList } from './BatchList';
 import { BatchView } from './BatchView';
 import { CreateBatchModal } from './CreateBatchModal';
 import { Plus, Moon, Sun } from 'lucide-react';
+import { toast } from 'sonner';
 
 export function LaundryApp() {
   const { batches, isLoaded, createBatch, deleteBatch, addClothToBatch, toggleClothReceived, getBatch } = useLaundryStorage();
   const { isLoaded: tagsLoaded, addCustomTag, getAllTagOptions, getTagDisplay } = useCustomTags();
+  const { clothes, isLoading: isLibraryLoading, addCloth } = useClothesLibrary();
   const { isDark, toggleTheme } = useTheme();
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -25,6 +28,21 @@ export function LaundryApp() {
   const selectedBatch = selectedBatchId ? getBatch(selectedBatchId) : null;
   const tagOptions = getAllTagOptions();
 
+  const handleAddCloth = async (photo: string, label: string, tag: string) => {
+    if (selectedBatch) {
+      // Add to batch (local storage)
+      addClothToBatch(selectedBatch.id, { photo, label, tag });
+      
+      // If it's a new photo (base64), also save to cloud library
+      if (photo.startsWith('data:')) {
+        const result = await addCloth(photo, label, tag);
+        if (result) {
+          toast.success('Saved to your wardrobe!');
+        }
+      }
+    }
+  };
+
   // If viewing a specific batch
   if (selectedBatch) {
     return (
@@ -32,12 +50,14 @@ export function LaundryApp() {
         batch={selectedBatch}
         onBack={() => setSelectedBatchId(null)}
         onToggleReceived={(clothId) => toggleClothReceived(selectedBatch.id, clothId)}
-        onAddCloth={(photo, label, tag) => addClothToBatch(selectedBatch.id, { photo, label, tag })}
+        onAddCloth={handleAddCloth}
         isDark={isDark}
         onToggleTheme={toggleTheme}
         tagOptions={tagOptions}
         onAddCustomTag={addCustomTag}
         getTagDisplay={getTagDisplay}
+        clothesLibrary={clothes}
+        isLibraryLoading={isLibraryLoading}
       />
     );
   }
