@@ -112,9 +112,9 @@ export function AddClothModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md mx-4 rounded-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg mx-4 rounded-2xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="text-center">
+          <DialogTitle className="text-center text-lg sm:text-xl">
             {mode === 'edit-tag' ? 'Change Category' : 'Add Cloth'}
           </DialogTitle>
         </DialogHeader>
@@ -299,21 +299,21 @@ export function AddClothModal({
                     {clothesLibrary.length > 0 && (
                       <h3 className="text-sm font-medium text-muted-foreground">Or Add New</h3>
                     )}
-                    <div className="flex gap-3">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
                       <button
                         onClick={() => cameraInputRef.current?.click()}
-                        className="flex-1 aspect-square rounded-xl bg-primary/10 border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-2 hover:bg-primary/20 transition-colors"
+                        className="aspect-square sm:aspect-[4/3] rounded-xl bg-primary/10 border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-2 hover:bg-primary/20 transition-colors"
                       >
-                        <Camera className="w-10 h-10 text-primary" />
-                        <span className="text-sm font-medium text-primary">Camera</span>
+                        <Camera className="w-10 h-10 sm:w-12 sm:h-12 text-primary" />
+                        <span className="text-sm sm:text-base font-medium text-primary">Camera</span>
                       </button>
                       
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="flex-1 aspect-square rounded-xl bg-secondary border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 hover:bg-secondary/80 transition-colors"
+                        className="aspect-square sm:aspect-[4/3] rounded-xl bg-secondary border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 hover:bg-secondary/80 transition-colors"
                       >
-                        <ImageIcon className="w-10 h-10 text-muted-foreground" />
-                        <span className="text-sm font-medium text-muted-foreground">Gallery</span>
+                        <ImageIcon className="w-10 h-10 sm:w-12 sm:h-12 text-muted-foreground" />
+                        <span className="text-sm sm:text-base font-medium text-muted-foreground">Gallery</span>
                       </button>
                       
                       <input

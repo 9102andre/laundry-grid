@@ -67,35 +67,39 @@ export function LaundryApp() {
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
       <header className="bg-card shadow-sm sticky top-0 z-10">
-        <div className="flex items-center justify-between px-4 py-4">
+        <div className="max-w-4xl mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">🧺 Laundry Tracker</h1>
-            <p className="text-sm text-muted-foreground">Track your clothes with photos</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">🧺 Laundry Tracker</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Track your clothes with photos</p>
           </div>
           <button
             onClick={toggleTheme}
-            className="w-10 h-10 rounded-full hover:bg-muted flex items-center justify-center transition-colors touch-target"
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-muted flex items-center justify-center transition-colors touch-target"
             aria-label="Toggle theme"
           >
-            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            {isDark ? <Sun className="w-5 h-5 sm:w-6 sm:h-6" /> : <Moon className="w-5 h-5 sm:w-6 sm:h-6" />}
           </button>
         </div>
       </header>
 
-      {/* Batch List */}
-      <BatchList
-        batches={batches}
-        onSelectBatch={setSelectedBatchId}
-        onDeleteBatch={deleteBatch}
-      />
+      {/* Batch List with max width for desktop */}
+      <div className="flex-1 overflow-auto">
+        <div className="max-w-4xl mx-auto">
+          <BatchList
+            batches={batches}
+            onSelectBatch={setSelectedBatchId}
+            onDeleteBatch={deleteBatch}
+          />
+        </div>
+      </div>
 
       {/* FAB - Create batch */}
       <button
         onClick={() => setIsCreateModalOpen(true)}
-        className="fixed bottom-6 right-6 w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform touch-target"
+        className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform touch-target"
         aria-label="Create new batch"
       >
-        <Plus className="w-8 h-8" />
+        <Plus className="w-7 h-7 sm:w-8 sm:h-8" />
       </button>
 
       {/* Create Modal */}
