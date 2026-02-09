@@ -44,8 +44,8 @@ export function ClothGrid({ items, filter, tagFilter, onToggleReceived, getTagDi
   }
 
   return (
-    <div className="flex-1 overflow-auto px-4 py-2">
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
         {filteredItems.map(item => (
           <ClothGridItem
             key={item.id}
