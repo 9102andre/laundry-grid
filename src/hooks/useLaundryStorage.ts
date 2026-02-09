@@ -1,11 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { LaundryBatch, ClothItem } from '@/types/laundry';
+import { toast } from 'sonner';
 
 const STORAGE_KEY = 'laundry-batches';
 
 export function useLaundryStorage() {
   const [batches, setBatches] = useState<LaundryBatch[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const isFirstLoad = useRef(true);
+  const previousBatchCount = useRef(0);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -24,20 +27,37 @@ export function useLaundryStorage() {
           })),
         }));
         setBatches(hydratedBatches);
+        previousBatchCount.current = hydratedBatches.length;
+        
+        if (hydratedBatches.length > 0) {
+          toast.success(`📦 Loaded ${hydratedBatches.length} saved batch${hydratedBatches.length > 1 ? 'es' : ''} from device`, {
+            duration: 2000,
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to load batches from storage:', error);
+      toast.error('Failed to load saved data');
     }
     setIsLoaded(true);
+    isFirstLoad.current = false;
   }, []);
 
   // Save to localStorage whenever batches change
   useEffect(() => {
-    if (isLoaded) {
+    if (isLoaded && !isFirstLoad.current) {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(batches));
+        
+        // Show toast only when items are added (not on every change)
+        const totalItems = batches.reduce((sum, b) => sum + b.items.length, 0);
+        if (totalItems > 0 || batches.length !== previousBatchCount.current) {
+          toast.success('💾 Saved to device', { duration: 1500 });
+        }
+        previousBatchCount.current = batches.length;
       } catch (error) {
         console.error('Failed to save batches to storage:', error);
+        toast.error('Failed to save data to device');
       }
     }
   }, [batches, isLoaded]);
