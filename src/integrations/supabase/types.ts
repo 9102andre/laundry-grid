@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      batch_items: {
+        Row: {
+          batch_id: string
+          created_at: string
+          id: string
+          is_received: boolean
+          label: string | null
+          photo: string
+          tag: string
+          user_id: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          id?: string
+          is_received?: boolean
+          label?: string | null
+          photo: string
+          tag?: string
+          user_id: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          id?: string
+          is_received?: boolean
+          label?: string | null
+          photo?: string
+          tag?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_items_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "laundry_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clothes: {
         Row: {
           created_at: string
@@ -21,6 +62,7 @@ export type Database = {
           label: string | null
           photo_url: string
           tag: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -28,6 +70,7 @@ export type Database = {
           label?: string | null
           photo_url: string
           tag?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -35,6 +78,7 @@ export type Database = {
           label?: string | null
           photo_url?: string
           tag?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -44,18 +88,42 @@ export type Database = {
           emoji: string
           id: string
           name: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           emoji?: string
           id?: string
           name: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           emoji?: string
           id?: string
           name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      laundry_batches: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
         }
         Relationships: []
       }
