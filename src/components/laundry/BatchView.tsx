@@ -16,7 +16,7 @@ interface BatchViewProps {
   isDark: boolean;
   onToggleTheme: () => void;
   tagOptions: { value: string; label: string; emoji: string; isCustom: boolean }[];
-  onAddCustomTag: (name: string, emoji: string) => void;
+  onAddCustomTag: (name: string, emoji: string) => void | Promise<any>;
   getTagDisplay: (tagValue: string) => { value: string; label: string; emoji: string };
   clothesLibrary: ClothesItem[];
   isLibraryLoading: boolean;
