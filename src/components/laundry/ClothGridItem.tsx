@@ -43,16 +43,26 @@ export function ClothGridItem({ item, onToggle, getTagDisplay }: ClothGridItemPr
       
       {/* Bottom section */}
       <div className="p-2.5 sm:p-3 flex items-center justify-between gap-2">
-        {/* Label */}
-        <span className="text-xs sm:text-sm font-medium text-foreground truncate flex-1">
-          {item.label || 'Unnamed'}
-        </span>
+        {/* Label + uncheck info */}
+        <div className="flex-1 min-w-0">
+          <span className="text-xs sm:text-sm font-medium text-foreground truncate block">
+            {item.label || 'Unnamed'}
+          </span>
+          {item.isReceived && item.uncheckCount > 0 && (
+            <span className={cn(
+              "text-[10px]",
+              item.uncheckCount >= 3 ? "text-destructive" : "text-muted-foreground"
+            )}>
+              Unchecks: {item.uncheckCount}/3
+            </span>
+          )}
+        </div>
         
         {/* Checkbox */}
         <button
           onClick={onToggle}
           className={cn(
-            "w-7 h-7 sm:w-8 sm:h-8 rounded-lg border-2 flex items-center justify-center transition-all touch-target",
+            "w-7 h-7 sm:w-8 sm:h-8 rounded-lg border-2 flex items-center justify-center transition-all touch-target shrink-0",
             item.isReceived
               ? "bg-success border-success"
               : "border-muted-foreground/40 hover:border-primary"
