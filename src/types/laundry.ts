@@ -10,6 +10,7 @@ export interface ClothItem {
   isReceived: boolean;
   addedAt: Date;
   receivedAt?: Date;
+  uncheckCount: number;
 }
 
 export interface LaundryBatch {

@@ -1,0 +1,1 @@
+ALTER TABLE public.batch_items ADD COLUMN uncheck_count integer NOT NULL DEFAULT 0;

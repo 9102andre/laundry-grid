@@ -5,8 +5,16 @@ import { FilterBar } from './FilterBar';
 import { ClothGrid } from './ClothGrid';
 import { AddClothModal } from './AddClothModal';
 import { AddCustomTagModal } from './AddCustomTagModal';
-import { ArrowLeft, Camera, Moon, Sun } from 'lucide-react';
+import { ArrowLeft, Camera, Moon, Sun, Settings } from 'lucide-react';
 import { ClothesItem } from '@/hooks/useClothesLibrary';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 interface BatchViewProps {
   batch: LaundryBatch;
@@ -20,6 +28,7 @@ interface BatchViewProps {
   getTagDisplay: (tagValue: string) => { value: string; label: string; emoji: string };
   clothesLibrary: ClothesItem[];
   isLibraryLoading: boolean;
+  onResetUncheckLimits: () => void;
 }
 
 export function BatchView({ 
@@ -34,11 +43,13 @@ export function BatchView({
   getTagDisplay,
   clothesLibrary,
   isLibraryLoading,
+  onResetUncheckLimits,
 }: BatchViewProps) {
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [tagFilter, setTagFilter] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAddTagModalOpen, setIsAddTagModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   return (
     <div className="flex flex-col h-full">
@@ -58,13 +69,22 @@ export function BatchView({
               {batch.name}
             </h1>
             
-            <button
-              onClick={onToggleTheme}
-              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-muted flex items-center justify-center transition-colors touch-target"
-              aria-label="Toggle theme"
-            >
-              {isDark ? <Sun className="w-5 h-5 sm:w-6 sm:h-6" /> : <Moon className="w-5 h-5 sm:w-6 sm:h-6" />}
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-muted flex items-center justify-center transition-colors touch-target"
+                aria-label="Batch settings"
+              >
+                <Settings className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+              <button
+                onClick={onToggleTheme}
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-muted flex items-center justify-center transition-colors touch-target"
+                aria-label="Toggle theme"
+              >
+                {isDark ? <Sun className="w-5 h-5 sm:w-6 sm:h-6" /> : <Moon className="w-5 h-5 sm:w-6 sm:h-6" />}
+              </button>
+            </div>
           </div>
           
           {/* Summary */}
@@ -128,6 +148,49 @@ export function BatchView({
           setIsAddModalOpen(true);
         }}
       />
+
+      {/* Batch Settings Dialog */}
+      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Batch Settings</DialogTitle>
+            <DialogDescription>
+              Manage settings for "{batch.name}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="rounded-lg border border-border p-4 space-y-3">
+              <h4 className="text-sm font-semibold text-foreground">Uncheck Limits</h4>
+              <p className="text-xs text-muted-foreground">
+                Each item can only be unchecked 3 times. If you've hit the limit, reset all items below.
+              </p>
+              {batch.items.some(i => i.uncheckCount > 0) && (
+                <div className="text-xs text-muted-foreground space-y-1">
+                  {batch.items.filter(i => i.uncheckCount > 0).map(i => (
+                    <div key={i.id} className="flex justify-between">
+                      <span className="truncate">{i.label || 'Unnamed'}</span>
+                      <span className={i.uncheckCount >= 3 ? 'text-destructive font-medium' : ''}>
+                        {i.uncheckCount}/3 used
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  onResetUncheckLimits();
+                  setIsSettingsOpen(false);
+                }}
+              >
+                Reset All Uncheck Limits
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

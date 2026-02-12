@@ -40,6 +40,7 @@ export function useCloudLaundryStorage(userId: string | undefined) {
             isReceived: i.is_received,
             addedAt: new Date(i.created_at),
             receivedAt: undefined,
+            uncheckCount: (i as any).uncheck_count ?? 0,
           })),
       }));
 
@@ -104,7 +105,7 @@ export function useCloudLaundryStorage(userId: string | undefined) {
 
   const addClothToBatch = useCallback(async (
     batchId: string,
-    cloth: Omit<ClothItem, 'id' | 'addedAt' | 'isReceived'>
+    cloth: Omit<ClothItem, 'id' | 'addedAt' | 'isReceived' | 'uncheckCount'>
   ) => {
     if (!userId) return null;
     try {
@@ -129,6 +130,7 @@ export function useCloudLaundryStorage(userId: string | undefined) {
         tag: data.tag,
         isReceived: data.is_received,
         addedAt: new Date(data.created_at),
+        uncheckCount: 0,
       };
 
       setBatches(prev =>
@@ -153,6 +155,20 @@ export function useCloudLaundryStorage(userId: string | undefined) {
 
     const newValue = !item.isReceived;
 
+    // If unchecking, check the limit
+    if (!newValue && item.uncheckCount >= 3) {
+      toast.error('Uncheck limit reached (3/3). Go to batch settings to reset.');
+      return;
+    }
+
+    const newUncheckCount = !newValue ? item.uncheckCount + 1 : item.uncheckCount;
+
+    if (!newValue && newUncheckCount === 3) {
+      toast.warning('⚠️ Last uncheck used! No more unchecks allowed for this item.');
+    } else if (!newValue && newUncheckCount === 2) {
+      toast.warning('⚠️ 1 uncheck remaining for this item.');
+    }
+
     // Optimistic update
     setBatches(prev =>
       prev.map(b =>
@@ -160,7 +176,7 @@ export function useCloudLaundryStorage(userId: string | undefined) {
           ? {
               ...b,
               items: b.items.map(i =>
-                i.id === clothId ? { ...i, isReceived: newValue } : i
+                i.id === clothId ? { ...i, isReceived: newValue, uncheckCount: newUncheckCount } : i
               ),
             }
           : b
@@ -170,7 +186,7 @@ export function useCloudLaundryStorage(userId: string | undefined) {
     try {
       const { error } = await supabase
         .from('batch_items')
-        .update({ is_received: newValue })
+        .update({ is_received: newValue, uncheck_count: newUncheckCount } as any)
         .eq('id', clothId);
 
       if (error) throw error;
@@ -182,7 +198,7 @@ export function useCloudLaundryStorage(userId: string | undefined) {
             ? {
                 ...b,
                 items: b.items.map(i =>
-                  i.id === clothId ? { ...i, isReceived: !newValue } : i
+                  i.id === clothId ? { ...i, isReceived: !newValue, uncheckCount: item.uncheckCount } : i
                 ),
               }
             : b
@@ -190,6 +206,34 @@ export function useCloudLaundryStorage(userId: string | undefined) {
       );
       console.error('Failed to toggle received:', error);
       toast.error('Failed to update item');
+    }
+  }, [batches]);
+
+  const resetUncheckCount = useCallback(async (batchId: string) => {
+    try {
+      const batch = batches.find(b => b.id === batchId);
+      if (!batch) return;
+
+      const itemIds = batch.items.map(i => i.id);
+      
+      const { error } = await supabase
+        .from('batch_items')
+        .update({ uncheck_count: 0 } as any)
+        .in('id', itemIds);
+
+      if (error) throw error;
+
+      setBatches(prev =>
+        prev.map(b =>
+          b.id === batchId
+            ? { ...b, items: b.items.map(i => ({ ...i, uncheckCount: 0 })) }
+            : b
+        )
+      );
+      toast.success('Uncheck limits reset for all items in this batch.');
+    } catch (error) {
+      console.error('Failed to reset uncheck counts:', error);
+      toast.error('Failed to reset uncheck limits');
     }
   }, [batches]);
 
@@ -208,6 +252,7 @@ export function useCloudLaundryStorage(userId: string | undefined) {
     deleteBatch,
     addClothToBatch,
     toggleClothReceived,
+    resetUncheckCount,
     getBatch,
     totalItems,
     totalBatches,

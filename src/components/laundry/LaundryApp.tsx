@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 
 export function LaundryApp() {
   const { user, isLoading: authLoading, signOut } = useAuth();
-  const { batches, isLoaded, createBatch, deleteBatch, addClothToBatch, toggleClothReceived, getBatch, totalItems, totalBatches } = useCloudLaundryStorage(user?.id);
+  const { batches, isLoaded, createBatch, deleteBatch, addClothToBatch, toggleClothReceived, resetUncheckCount, getBatch, totalItems, totalBatches } = useCloudLaundryStorage(user?.id);
   const { isLoaded: tagsLoaded, addCustomTag, getAllTagOptions, getTagDisplay } = useCustomTags(user?.id);
   const { clothes, isLoading: isLibraryLoading, addCloth } = useClothesLibrary(user?.id);
   const { isDark, toggleTheme } = useTheme();
@@ -83,6 +83,7 @@ export function LaundryApp() {
         getTagDisplay={getTagDisplay}
         clothesLibrary={clothes}
         isLibraryLoading={isLibraryLoading}
+        onResetUncheckLimits={() => resetUncheckCount(selectedBatch.id)}
       />
     );
   }
