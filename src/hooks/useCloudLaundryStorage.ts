@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LaundryBatch, ClothItem } from '@/types/laundry';
 import { toast } from 'sonner';
@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 export function useCloudLaundryStorage(userId: string | undefined) {
   const [batches, setBatches] = useState<LaundryBatch[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const batchesRef = useRef(batches);
+  batchesRef.current = batches;
 
   // Fetch batches + items from cloud
   const fetchBatches = useCallback(async () => {
@@ -149,7 +151,7 @@ export function useCloudLaundryStorage(userId: string | undefined) {
   }, [userId]);
 
   const toggleClothReceived = useCallback(async (batchId: string, clothId: string) => {
-    const batch = batches.find(b => b.id === batchId);
+    const batch = batchesRef.current.find(b => b.id === batchId);
     const item = batch?.items.find(i => i.id === clothId);
     if (!item) return;
 
@@ -186,7 +188,7 @@ export function useCloudLaundryStorage(userId: string | undefined) {
     try {
       const { error } = await supabase
         .from('batch_items')
-        .update({ is_received: newValue, uncheck_count: newUncheckCount } as any)
+        .update({ is_received: newValue, uncheck_count: newUncheckCount })
         .eq('id', clothId);
 
       if (error) throw error;
@@ -207,18 +209,18 @@ export function useCloudLaundryStorage(userId: string | undefined) {
       console.error('Failed to toggle received:', error);
       toast.error('Failed to update item');
     }
-  }, [batches]);
+  }, []);
 
   const resetUncheckCount = useCallback(async (batchId: string) => {
     try {
-      const batch = batches.find(b => b.id === batchId);
+      const batch = batchesRef.current.find(b => b.id === batchId);
       if (!batch) return;
 
       const itemIds = batch.items.map(i => i.id);
       
       const { error } = await supabase
         .from('batch_items')
-        .update({ uncheck_count: 0 } as any)
+        .update({ uncheck_count: 0 })
         .in('id', itemIds);
 
       if (error) throw error;
@@ -235,7 +237,7 @@ export function useCloudLaundryStorage(userId: string | undefined) {
       console.error('Failed to reset uncheck counts:', error);
       toast.error('Failed to reset uncheck limits');
     }
-  }, [batches]);
+  }, []);
 
   const getBatch = useCallback((batchId: string) => {
     return batches.find(b => b.id === batchId);
