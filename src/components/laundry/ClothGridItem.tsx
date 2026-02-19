@@ -12,11 +12,13 @@ export function ClothGridItem({ item, onToggle, getTagDisplay }: ClothGridItemPr
   const tagDisplay = getTagDisplay(item.tag);
   
   return (
-    <div
+    <button
+      onClick={onToggle}
       className={cn(
-        "relative rounded-xl overflow-hidden bg-card shadow-sm transition-all duration-300 hover:shadow-md",
+        "relative rounded-xl overflow-hidden bg-card shadow-sm transition-all duration-300 hover:shadow-md w-full text-left cursor-pointer",
         item.isReceived && "cloth-received"
       )}
+      aria-label={item.isReceived ? 'Mark as pending' : 'Mark as received'}
     >
       {/* Photo */}
       <div className="aspect-square relative">
@@ -58,22 +60,20 @@ export function ClothGridItem({ item, onToggle, getTagDisplay }: ClothGridItemPr
           )}
         </div>
         
-        {/* Checkbox */}
-        <button
-          onClick={onToggle}
+        {/* Checkbox indicator */}
+        <div
           className={cn(
-            "w-7 h-7 sm:w-8 sm:h-8 rounded-lg border-2 flex items-center justify-center transition-all touch-target shrink-0",
+            "w-7 h-7 sm:w-8 sm:h-8 rounded-lg border-2 flex items-center justify-center transition-all shrink-0",
             item.isReceived
               ? "bg-success border-success"
-              : "border-muted-foreground/40 hover:border-primary"
+              : "border-muted-foreground/40"
           )}
-          aria-label={item.isReceived ? 'Mark as pending' : 'Mark as received'}
         >
           {item.isReceived && (
             <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success-foreground" strokeWidth={3} />
           )}
-        </button>
+        </div>
       </div>
-    </div>
+    </button>
   );
 }
