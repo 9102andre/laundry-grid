@@ -77,8 +77,7 @@ export function AddClothModal({
     setIsSubmitting(true);
     
     if (selectedCloth) {
-      // Using existing cloth from library
-      onAdd(selectedCloth.photo_url, selectedCloth.label || '', tag);
+      onAdd(selectedCloth.photo_url, label, tag);
     } else if (photo) {
       // New cloth
       onAdd(photo, label, tag);
@@ -231,6 +230,14 @@ export function AddClothModal({
                       <X className="w-5 h-5" />
                     </button>
                   </div>
+                  
+                  {/* Label input for renaming */}
+                  <Input
+                    placeholder="Label (optional)"
+                    value={label}
+                    onChange={(e) => setLabel(e.target.value)}
+                    className="h-12 rounded-xl text-base"
+                  />
                   
                   {/* Category display with edit button */}
                   <div className="flex items-center justify-between p-3 bg-muted rounded-xl">
