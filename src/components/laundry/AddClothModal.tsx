@@ -9,7 +9,7 @@ import { ClothesItem } from '@/hooks/useClothesLibrary';
 interface AddClothModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (photo: string, label: string, tag: string) => void;
+  onAdd: (photo: string, label: string, tag: string) => void | Promise<any>;
   tagOptions: { value: string; label: string; emoji: string; isCustom: boolean }[];
   onAddCustomTag: () => void;
   clothesLibrary: ClothesItem[];
@@ -148,7 +148,7 @@ export function AddClothModal({
       i === currentReviewIndex ? { ...p, label, tag } : p
     );
     for (const item of final) {
-      onAdd(item.photo, item.label, item.tag);
+      await onAdd(item.photo, item.label, item.tag);
     }
     handleClose();
   };
@@ -156,9 +156,9 @@ export function AddClothModal({
   const handleSubmit = async () => {
     setIsSubmitting(true);
     if (selectedCloth) {
-      onAdd(selectedCloth.photo_url, label, tag);
+      await onAdd(selectedCloth.photo_url, label, tag);
     } else if (photo) {
-      onAdd(photo, label, tag);
+      await onAdd(photo, label, tag);
     }
     handleClose();
   };
