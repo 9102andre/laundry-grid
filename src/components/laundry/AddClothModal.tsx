@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Camera, Image as ImageIcon, X, Plus, Pencil, Loader2 } from 'lucide-react';
+import { Camera, Image as ImageIcon, X, Plus, Pencil, Loader2, ChevronLeft, ChevronRight, Images } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ClothesItem } from '@/hooks/useClothesLibrary';
 
@@ -17,7 +17,13 @@ interface AddClothModalProps {
   getTagDisplay: (tagValue: string) => { value: string; label: string; emoji: string };
 }
 
-type Mode = 'select' | 'new' | 'edit-tag';
+interface PendingPhoto {
+  photo: string;
+  label: string;
+  tag: string;
+}
+
+type Mode = 'select' | 'new' | 'edit-tag' | 'multi-review';
 
 export function AddClothModal({ 
   isOpen, 
@@ -35,10 +41,12 @@ export function AddClothModal({
   const [label, setLabel] = useState('');
   const [tag, setTag] = useState<string>(tagOptions[0]?.value || 'shirt');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
+  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const multiFileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset when modal opens
   useEffect(() => {
     if (isOpen) {
       setMode('select');
@@ -47,6 +55,8 @@ export function AddClothModal({
       setLabel('');
       setTag(tagOptions[0]?.value || 'shirt');
       setIsSubmitting(false);
+      setPendingPhotos([]);
+      setCurrentReviewIndex(0);
     }
   }, [isOpen, tagOptions]);
 
@@ -62,9 +72,32 @@ export function AddClothModal({
     }
   };
 
+  const handleMultiFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const defaultTag = tagOptions[0]?.value || 'shirt';
+    let loaded = 0;
+    const results: PendingPhoto[] = [];
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        results.push({ photo: reader.result as string, label: '', tag: defaultTag });
+        loaded++;
+        if (loaded === files.length) {
+          setPendingPhotos(results);
+          setCurrentReviewIndex(0);
+          setLabel('');
+          setTag(defaultTag);
+          setMode('multi-review');
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
+
   const handleSelectFromLibrary = (cloth: ClothesItem) => {
     setSelectedCloth(cloth);
-    const tagDisplay = getTagDisplay(cloth.tag);
     setTag(cloth.tag);
     setLabel(cloth.label || '');
   };
@@ -73,16 +106,60 @@ export function AddClothModal({
     setMode('edit-tag');
   };
 
+  const saveCurrentReview = () => {
+    setPendingPhotos(prev => prev.map((p, i) =>
+      i === currentReviewIndex ? { ...p, label, tag } : p
+    ));
+  };
+
+  const handleReviewNext = () => {
+    saveCurrentReview();
+    const next = currentReviewIndex + 1;
+    setCurrentReviewIndex(next);
+    setLabel(pendingPhotos[next]?.label || '');
+    setTag(pendingPhotos[next]?.tag || tagOptions[0]?.value || 'shirt');
+  };
+
+  const handleReviewPrev = () => {
+    saveCurrentReview();
+    const prev = currentReviewIndex - 1;
+    setCurrentReviewIndex(prev);
+    setLabel(pendingPhotos[prev]?.label || '');
+    setTag(pendingPhotos[prev]?.tag || tagOptions[0]?.value || 'shirt');
+  };
+
+  const handleRemoveFromPending = () => {
+    const updated = pendingPhotos.filter((_, i) => i !== currentReviewIndex);
+    if (updated.length === 0) {
+      setPendingPhotos([]);
+      setMode('select');
+      return;
+    }
+    const newIndex = Math.min(currentReviewIndex, updated.length - 1);
+    setPendingPhotos(updated);
+    setCurrentReviewIndex(newIndex);
+    setLabel(updated[newIndex]?.label || '');
+    setTag(updated[newIndex]?.tag || tagOptions[0]?.value || 'shirt');
+  };
+
+  const handleSubmitAll = async () => {
+    setIsSubmitting(true);
+    const final = pendingPhotos.map((p, i) =>
+      i === currentReviewIndex ? { ...p, label, tag } : p
+    );
+    for (const item of final) {
+      onAdd(item.photo, item.label, item.tag);
+    }
+    handleClose();
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    
     if (selectedCloth) {
       onAdd(selectedCloth.photo_url, label, tag);
     } else if (photo) {
-      // New cloth
       onAdd(photo, label, tag);
     }
-    
     handleClose();
   };
 
@@ -93,14 +170,20 @@ export function AddClothModal({
     setLabel('');
     setTag(tagOptions[0]?.value || 'shirt');
     setIsSubmitting(false);
+    setPendingPhotos([]);
+    setCurrentReviewIndex(0);
     onClose();
   };
 
   const handleBack = () => {
     if (mode === 'edit-tag') {
-      setMode('select');
+      if (pendingPhotos.length > 0) setMode('multi-review');
+      else setMode('select');
     } else if (mode === 'new') {
       setPhoto(null);
+      setMode('select');
+    } else if (mode === 'multi-review') {
+      setPendingPhotos([]);
       setMode('select');
     } else {
       setSelectedCloth(null);
@@ -109,12 +192,38 @@ export function AddClothModal({
 
   const selectedTagDisplay = getTagDisplay(tag);
 
+  const tagSelector = (
+    <div className="flex flex-wrap gap-2">
+      {tagOptions.map(option => (
+        <button
+          key={option.value}
+          onClick={() => setTag(option.value)}
+          className={cn(
+            "px-3 py-2 rounded-full text-sm font-medium transition-all",
+            tag === option.value
+              ? "bg-accent text-accent-foreground"
+              : "bg-muted text-muted-foreground hover:bg-muted/80"
+          )}
+        >
+          {option.emoji} {option.label}
+        </button>
+      ))}
+      <button
+        onClick={onAddCustomTag}
+        className="px-3 py-2 rounded-full text-sm font-medium transition-all bg-primary/10 text-primary hover:bg-primary/20 flex items-center gap-1"
+      >
+        <Plus className="w-4 h-4" />
+        Add
+      </button>
+    </div>
+  );
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-lg mx-4 rounded-2xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-center text-lg sm:text-xl">
-            {mode === 'edit-tag' ? 'Change Category' : 'Add Cloth'}
+            {mode === 'edit-tag' ? 'Change Category' : mode === 'multi-review' ? 'Review Photos' : 'Add Cloth'}
           </DialogTitle>
         </DialogHeader>
         
@@ -122,42 +231,22 @@ export function AddClothModal({
           {/* Mode: Edit Tag */}
           {mode === 'edit-tag' && (
             <>
-              <div className="flex flex-wrap gap-2">
-                {tagOptions.map(option => (
-                  <button
-                    key={option.value}
-                    onClick={() => setTag(option.value)}
-                    className={cn(
-                      "px-3 py-2 rounded-full text-sm font-medium transition-all",
-                      tag === option.value
-                        ? "bg-accent text-accent-foreground"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    )}
-                  >
-                    {option.emoji} {option.label}
-                  </button>
-                ))}
-                <button
-                  onClick={onAddCustomTag}
-                  className="px-3 py-2 rounded-full text-sm font-medium transition-all bg-primary/10 text-primary hover:bg-primary/20 flex items-center gap-1"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add
-                </button>
-              </div>
-              
+              {tagSelector}
               <div className="flex gap-2">
                 <Button variant="outline" onClick={handleBack} className="flex-1 h-12 rounded-xl">
                   Back
                 </Button>
-                <Button onClick={() => setMode('select')} className="flex-1 h-12 rounded-xl">
+                <Button onClick={() => {
+                  if (pendingPhotos.length > 0) setMode('multi-review');
+                  else setMode('select');
+                }} className="flex-1 h-12 rounded-xl">
                   Done
                 </Button>
               </div>
             </>
           )}
 
-          {/* Mode: New photo */}
+          {/* Mode: New single photo */}
           {mode === 'new' && photo && (
             <>
               <div className="relative aspect-square rounded-xl overflow-hidden">
@@ -169,38 +258,13 @@ export function AddClothModal({
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              
               <Input
                 placeholder="Label (optional)"
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
                 className="h-12 rounded-xl text-base"
               />
-              
-              <div className="flex flex-wrap gap-2">
-                {tagOptions.map(option => (
-                  <button
-                    key={option.value}
-                    onClick={() => setTag(option.value)}
-                    className={cn(
-                      "px-3 py-2 rounded-full text-sm font-medium transition-all",
-                      tag === option.value
-                        ? "bg-accent text-accent-foreground"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    )}
-                  >
-                    {option.emoji} {option.label}
-                  </button>
-                ))}
-                <button
-                  onClick={onAddCustomTag}
-                  className="px-3 py-2 rounded-full text-sm font-medium transition-all bg-primary/10 text-primary hover:bg-primary/20 flex items-center gap-1"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add
-                </button>
-              </div>
-              
+              {tagSelector}
               <Button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
@@ -211,10 +275,63 @@ export function AddClothModal({
             </>
           )}
 
+          {/* Mode: Multi-review */}
+          {mode === 'multi-review' && pendingPhotos.length > 0 && (
+            <>
+              <div className="flex items-center justify-between">
+                <Button variant="ghost" size="sm" onClick={handleBack} className="text-sm">
+                  <ChevronLeft className="w-4 h-4 mr-1" /> Back
+                </Button>
+                <span className="text-sm font-medium text-muted-foreground">
+                  {currentReviewIndex + 1} / {pendingPhotos.length}
+                </span>
+                <Button variant="ghost" size="sm" onClick={handleRemoveFromPending} className="text-sm text-destructive hover:text-destructive">
+                  <X className="w-4 h-4 mr-1" /> Remove
+                </Button>
+              </div>
+
+              <div className="relative aspect-square rounded-xl overflow-hidden">
+                <img src={pendingPhotos[currentReviewIndex].photo} alt="Review" className="w-full h-full object-cover" />
+              </div>
+              
+              <Input
+                placeholder="Label (optional)"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                className="h-12 rounded-xl text-base"
+              />
+              
+              {tagSelector}
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleReviewPrev}
+                  disabled={currentReviewIndex === 0}
+                  className="flex-1 h-12 rounded-xl"
+                >
+                  <ChevronLeft className="w-5 h-5 mr-1" /> Prev
+                </Button>
+                {currentReviewIndex < pendingPhotos.length - 1 ? (
+                  <Button onClick={handleReviewNext} className="flex-1 h-12 rounded-xl">
+                    Next <ChevronRight className="w-5 h-5 ml-1" />
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleSubmitAll}
+                    disabled={isSubmitting}
+                    className="flex-1 h-12 rounded-xl text-base font-semibold"
+                  >
+                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : `Add All (${pendingPhotos.length})`}
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+
           {/* Mode: Select from library or add new */}
           {mode === 'select' && (
             <>
-              {/* Selected cloth preview */}
               {selectedCloth && (
                 <div className="space-y-3">
                   <div className="relative aspect-square rounded-xl overflow-hidden">
@@ -230,16 +347,12 @@ export function AddClothModal({
                       <X className="w-5 h-5" />
                     </button>
                   </div>
-                  
-                  {/* Label input for renaming */}
                   <Input
                     placeholder="Label (optional)"
                     value={label}
                     onChange={(e) => setLabel(e.target.value)}
                     className="h-12 rounded-xl text-base"
                   />
-                  
-                  {/* Category display with edit button */}
                   <div className="flex items-center justify-between p-3 bg-muted rounded-xl">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{selectedTagDisplay.emoji}</span>
@@ -253,7 +366,6 @@ export function AddClothModal({
                       Edit
                     </button>
                   </div>
-                  
                   <Button
                     onClick={handleSubmit}
                     disabled={isSubmitting}
@@ -264,10 +376,8 @@ export function AddClothModal({
                 </div>
               )}
 
-              {/* Library section - show when no cloth selected */}
               {!selectedCloth && (
                 <>
-                  {/* Your Clothes section */}
                   {clothesLibrary.length > 0 && (
                     <div className="space-y-2">
                       <h3 className="text-sm font-medium text-muted-foreground">Your Clothes</h3>
@@ -301,26 +411,33 @@ export function AddClothModal({
                     </div>
                   )}
 
-                  {/* Camera and Gallery options */}
                   <div className="space-y-2">
                     {clothesLibrary.length > 0 && (
                       <h3 className="text-sm font-medium text-muted-foreground">Or Add New</h3>
                     )}
-                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <div className="grid grid-cols-3 gap-3 sm:gap-4">
                       <button
                         onClick={() => cameraInputRef.current?.click()}
-                        className="aspect-square sm:aspect-[4/3] rounded-xl bg-primary/10 border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-2 hover:bg-primary/20 transition-colors"
+                        className="aspect-square rounded-xl bg-primary/10 border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-1.5 hover:bg-primary/20 transition-colors"
                       >
-                        <Camera className="w-10 h-10 sm:w-12 sm:h-12 text-primary" />
-                        <span className="text-sm sm:text-base font-medium text-primary">Camera</span>
+                        <Camera className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
+                        <span className="text-xs sm:text-sm font-medium text-primary">Camera</span>
                       </button>
                       
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="aspect-square sm:aspect-[4/3] rounded-xl bg-secondary border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 hover:bg-secondary/80 transition-colors"
+                        className="aspect-square rounded-xl bg-secondary border-2 border-dashed border-border flex flex-col items-center justify-center gap-1.5 hover:bg-secondary/80 transition-colors"
                       >
-                        <ImageIcon className="w-10 h-10 sm:w-12 sm:h-12 text-muted-foreground" />
-                        <span className="text-sm sm:text-base font-medium text-muted-foreground">Gallery</span>
+                        <ImageIcon className="w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground" />
+                        <span className="text-xs sm:text-sm font-medium text-muted-foreground">Single</span>
+                      </button>
+
+                      <button
+                        onClick={() => multiFileInputRef.current?.click()}
+                        className="aspect-square rounded-xl bg-secondary border-2 border-dashed border-border flex flex-col items-center justify-center gap-1.5 hover:bg-secondary/80 transition-colors"
+                      >
+                        <Images className="w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground" />
+                        <span className="text-xs sm:text-sm font-medium text-muted-foreground">Multiple</span>
                       </button>
                       
                       <input
@@ -336,6 +453,14 @@ export function AddClothModal({
                         type="file"
                         accept="image/*"
                         onChange={handleFileChange}
+                        className="hidden"
+                      />
+                      <input
+                        ref={multiFileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleMultiFileChange}
                         className="hidden"
                       />
                     </div>
