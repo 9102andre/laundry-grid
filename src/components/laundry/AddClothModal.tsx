@@ -72,27 +72,36 @@ export function AddClothModal({
     }
   };
 
-  const handleMultiFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMultiFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     const defaultTag = tagOptions[0]?.value || 'shirt';
-    let loaded = 0;
-    const results: PendingPhoto[] = [];
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        results.push({ photo: reader.result as string, label: '', tag: defaultTag });
-        loaded++;
-        if (loaded === files.length) {
-          setPendingPhotos(results);
-          setCurrentReviewIndex(0);
-          setLabel('');
-          setTag(defaultTag);
-          setMode('multi-review');
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+    const fileArray = Array.from(files);
+    
+    const readFile = (file: File): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+    };
+
+    try {
+      const results: PendingPhoto[] = [];
+      for (const file of fileArray) {
+        const dataUrl = await readFile(file);
+        results.push({ photo: dataUrl, label: '', tag: defaultTag });
+      }
+      setPendingPhotos(results);
+      setCurrentReviewIndex(0);
+      setLabel('');
+      setTag(defaultTag);
+      setMode('multi-review');
+    } catch (err) {
+      console.error('Failed to read files:', err);
+    }
+    
     e.target.value = '';
   };
 
