@@ -86,6 +86,18 @@ export function useClothesLibrary(userId: string | undefined) {
     }
   }, [userId, uploadPhoto]);
 
+  const updateClothLabel = useCallback(async (clothId: string, newLabel: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.from('clothes').update({ label: newLabel || null }).eq('id', clothId);
+      if (error) throw error;
+      setClothes(prev => prev.map(item => item.id === clothId ? { ...item, label: newLabel || null } : item));
+      return true;
+    } catch (error) {
+      console.error('Failed to update cloth label:', error);
+      return false;
+    }
+  }, []);
+
   const updateClothTag = useCallback(async (clothId: string, newTag: string): Promise<boolean> => {
     try {
       const { error } = await supabase.from('clothes').update({ tag: newTag }).eq('id', clothId);
@@ -110,5 +122,5 @@ export function useClothesLibrary(userId: string | undefined) {
     }
   }, []);
 
-  return { clothes, isLoading, addCloth, updateClothTag, deleteCloth, refetch: fetchClothes };
+  return { clothes, isLoading, addCloth, updateClothLabel, updateClothTag, deleteCloth, refetch: fetchClothes };
 }

@@ -8,20 +8,22 @@ import { BatchList } from './BatchList';
 import { BatchView } from './BatchView';
 import { CreateBatchModal } from './CreateBatchModal';
 import { ManageTagsModal } from './ManageTagsModal';
+import { ManageClothesModal } from './ManageClothesModal';
 import { StorageIndicator } from './StorageIndicator';
 import { AuthPage } from '@/pages/Auth';
-import { Plus, Moon, Sun, LogOut, Settings } from 'lucide-react';
+import { Plus, Moon, Sun, LogOut, Settings, Shirt } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function LaundryApp() {
   const { user, isLoading: authLoading, signOut } = useAuth();
   const { batches, isLoaded, createBatch, deleteBatch, addClothToBatch, toggleClothReceived, resetUncheckCount, getBatch, totalItems, totalBatches } = useCloudLaundryStorage(user?.id);
   const { customTags, isLoaded: tagsLoaded, addCustomTag, deleteCustomTag, getAllTagOptions, getTagDisplay } = useCustomTags(user?.id);
-  const { clothes, isLoading: isLibraryLoading, addCloth } = useClothesLibrary(user?.id);
+  const { clothes, isLoading: isLibraryLoading, addCloth, updateClothLabel, updateClothTag } = useClothesLibrary(user?.id);
   const { isDark, toggleTheme } = useTheme();
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isManageTagsOpen, setIsManageTagsOpen] = useState(false);
+  const [isManageClothesOpen, setIsManageClothesOpen] = useState(false);
 
   // Auth loading
   if (authLoading) {
@@ -104,6 +106,13 @@ export function LaundryApp() {
           </div>
           <div className="flex items-center gap-1">
             <button
+              onClick={() => setIsManageClothesOpen(true)}
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-muted flex items-center justify-center transition-colors touch-target"
+              aria-label="Manage wardrobe"
+            >
+              <Shirt className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground" />
+            </button>
+            <button
               onClick={() => setIsManageTagsOpen(true)}
               className="w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-muted flex items-center justify-center transition-colors touch-target"
               aria-label="Manage categories"
@@ -170,6 +179,18 @@ export function LaundryApp() {
         customTags={customTags}
         onAddTag={addCustomTag}
         onDeleteTag={deleteCustomTag}
+      />
+
+      {/* Manage Clothes Modal */}
+      <ManageClothesModal
+        isOpen={isManageClothesOpen}
+        onClose={() => setIsManageClothesOpen(false)}
+        clothes={clothes}
+        isLoading={isLibraryLoading}
+        tagOptions={tagOptions}
+        getTagDisplay={getTagDisplay}
+        onUpdateLabel={updateClothLabel}
+        onUpdateTag={updateClothTag}
       />
     </div>
   );
