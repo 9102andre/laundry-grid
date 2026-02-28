@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ClothesItem } from '@/hooks/useClothesLibrary';
-import { Pencil, Check, X } from 'lucide-react';
+import { Pencil, Check, X, Camera, ImagePlus } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ManageClothesModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ interface ManageClothesModalProps {
   getTagDisplay: (tagValue: string) => { value: string; label: string; emoji: string };
   onUpdateLabel: (clothId: string, newLabel: string) => Promise<boolean>;
   onUpdateTag: (clothId: string, newTag: string) => Promise<boolean>;
+  onUpdatePhoto: (clothId: string, photoBase64: string) => Promise<boolean>;
 }
 
 export function ManageClothesModal({
@@ -31,22 +33,51 @@ export function ManageClothesModal({
   getTagDisplay,
   onUpdateLabel,
   onUpdateTag,
+  onUpdatePhoto,
 }: ManageClothesModalProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editLabel, setEditLabel] = useState('');
   const [editTag, setEditTag] = useState('');
+  const [editPhotoPreview, setEditPhotoPreview] = useState<string | null>(null);
+  const [editPhotoBase64, setEditPhotoBase64] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const startEdit = (item: ClothesItem) => {
     setEditingId(item.id);
     setEditLabel(item.label || '');
     setEditTag(item.tag);
+    setEditPhotoPreview(null);
+    setEditPhotoBase64(null);
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setEditLabel('');
     setEditTag('');
+    setEditPhotoPreview(null);
+    setEditPhotoBase64(null);
+  };
+
+  const handlePhotoSelect = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      setEditPhotoPreview(result);
+      setEditPhotoBase64(result);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   const saveEdit = async () => {
@@ -54,12 +85,17 @@ export function ManageClothesModal({
     setSaving(true);
     const item = clothes.find(c => c.id === editingId);
     if (item) {
+      if (editPhotoBase64) {
+        const ok = await onUpdatePhoto(editingId, editPhotoBase64);
+        if (!ok) { toast.error('Failed to update photo'); setSaving(false); return; }
+      }
       if (editLabel !== (item.label || '')) {
         await onUpdateLabel(editingId, editLabel);
       }
       if (editTag !== item.tag) {
         await onUpdateTag(editingId, editTag);
       }
+      toast.success('Updated!');
     }
     setSaving(false);
     cancelEdit();
@@ -71,9 +107,17 @@ export function ManageClothesModal({
         <DialogHeader>
           <DialogTitle>My Wardrobe</DialogTitle>
           <DialogDescription>
-            Edit labels and categories for your saved clothes.
+            Edit labels, categories, and photos for your saved clothes.
           </DialogDescription>
         </DialogHeader>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
 
         {isLoading ? (
           <div className="flex justify-center py-8">
@@ -94,21 +138,32 @@ export function ManageClothesModal({
                   key={item.id}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-muted/50 group"
                 >
-                  {/* Thumbnail */}
-                  <img
-                    src={item.photo_url}
-                    alt={item.label || 'Cloth'}
-                    className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
-                  />
-
                   {isEditing ? (
-                    <div className="flex-1 space-y-2 min-w-0">
+                    <div className="flex-1 space-y-3 min-w-0">
+                      {/* Photo preview + change */}
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={editPhotoPreview || item.photo_url}
+                          alt={item.label || 'Cloth'}
+                          className="w-16 h-16 rounded-lg object-cover flex-shrink-0 border border-border"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-9 gap-1.5"
+                          onClick={handlePhotoSelect}
+                          disabled={saving}
+                        >
+                          <ImagePlus className="w-4 h-4" />
+                          Change Photo
+                        </Button>
+                      </div>
                       <Input
                         value={editLabel}
                         onChange={(e) => setEditLabel(e.target.value)}
                         placeholder="Label"
                         className="h-9 rounded-lg text-sm"
-                        autoFocus
                       />
                       <select
                         value={editTag}
@@ -143,6 +198,11 @@ export function ManageClothesModal({
                     </div>
                   ) : (
                     <>
+                      <img
+                        src={item.photo_url}
+                        alt={item.label || 'Cloth'}
+                        className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                      />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">
                           {item.label || 'Unnamed'}
