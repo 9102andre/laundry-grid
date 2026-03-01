@@ -18,7 +18,7 @@ export function LaundryApp() {
   const { user, isLoading: authLoading, signOut } = useAuth();
   const { batches, isLoaded, createBatch, deleteBatch, addClothToBatch, toggleClothReceived, resetUncheckCount, getBatch, totalItems, totalBatches } = useCloudLaundryStorage(user?.id);
   const { customTags, isLoaded: tagsLoaded, addCustomTag, deleteCustomTag, getAllTagOptions, getTagDisplay } = useCustomTags(user?.id);
-  const { clothes, isLoading: isLibraryLoading, addCloth, updateClothLabel, updateClothTag, updateClothPhoto } = useClothesLibrary(user?.id);
+  const { clothes, isLoading: isLibraryLoading, addCloth, updateClothLabel, updateClothTag, updateClothPhoto, deleteCloth } = useClothesLibrary(user?.id);
   const { isDark, toggleTheme } = useTheme();
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -192,6 +192,8 @@ export function LaundryApp() {
         onUpdateLabel={updateClothLabel}
         onUpdateTag={updateClothTag}
         onUpdatePhoto={updateClothPhoto}
+        onDeleteCloth={deleteCloth}
+        onAddCloth={addCloth}
       />
     </div>
   );
